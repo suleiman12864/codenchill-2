@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=4">
-  <script src="script.js" defer></script>
+  <link rel="stylesheet" href="styles.css?v=5">
+  <script src="script.js?v=5" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -136,7 +136,7 @@
           <div class="form-row"><label for="message">Anything else I should know?</label><textarea id="message" name="message" rows="3" placeholder="Your goals, timeline, budget range, or any questions..." required></textarea></div>
           <label class="consent-row"><input name="contactConsent" type="checkbox" required><span>I agree that you can contact me about this project by email and WhatsApp, including a confirmation message.</span></label>
           <button class="button button-lime" type="submit">Send an enquiry <span aria-hidden="true">↗</span></button>
-          <p class="form-note" id="form-note" aria-live="polite">After you submit, a quick verification will appear before your enquiry is sent.</p>
+          <p class="form-note" id="form-note" aria-live="polite">Your enquiry details will be sent securely.</p>
         </form>
       </div>
       <div class="confirmation-screen section-wrap" id="confirmation-screen" hidden aria-labelledby="confirmation-title">
@@ -152,27 +152,6 @@
       </div>
     </section>
   </main>
-
-  <dialog class="captcha-dialog" id="captcha-dialog" aria-labelledby="captcha-title">
-    <div class="captcha-card">
-      <button class="captcha-close" id="captcha-close" type="button" aria-label="Close verification">×</button>
-      <div class="captcha-emblem" aria-hidden="true"><span>✳</span></div>
-      <p class="eyebrow">One quick check</p>
-      <h2 id="captcha-title">Let’s keep it<br><span>human.</span></h2>
-      <p class="captcha-description">Pick every picture that matches the object shown. This quick check helps keep spam out.</p>
-      <form id="captcha-form">
-        <div class="captcha-challenge"><span class="captcha-label">SELECT ALL MATCHING PICTURES</span><strong id="captcha-question">Loading…</strong></div>
-        <div class="captcha-grid" id="captcha-grid" role="group" aria-label="Choose all pictures that match the object shown"></div>
-        <p class="captcha-selection-count" id="captcha-selection-count" aria-live="polite">Select every matching picture.</p>
-        <p class="captcha-error" id="captcha-error" aria-live="polite"></p>
-        <div class="captcha-actions">
-          <button class="captcha-refresh" id="captcha-refresh" type="button">New question <span aria-hidden="true">↻</span></button>
-          <button class="button button-lime captcha-submit" id="captcha-submit" type="submit">Verify &amp; send <span aria-hidden="true">↗</span></button>
-        </div>
-      </form>
-      <p class="captcha-footnote"><span>◇</span> Your project details stay private.</p>
-    </div>
-  </dialog>
 
   <footer class="site-footer">
     <a class="brand footer-brand" href="#home"><span class="brand-symbol">C</span><span>code n chill<span class="brand-period">.</span></span></a>

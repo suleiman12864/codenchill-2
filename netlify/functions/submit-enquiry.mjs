@@ -1,10 +1,6 @@
-import { createCipheriv, createDecipheriv, createHmac, randomBytes, randomInt } from "node:crypto";
-
 const MAX_BODY_LENGTH = 20_000;
-const CAPTCHA_LIFETIME_MS = 5 * 60 * 1000;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^\+[1-9]\d{7,14}$/;
-const CAPTCHA_IMAGES = ["leaf", "flower", "mug", "book", "house", "camera"];
 
 const jsonResponse = (statusCode, body) => ({
   statusCode,
@@ -20,65 +16,6 @@ const escapeHtml = (value) =>
     '"': "&quot;",
     "'": "&#39;",
   })[character]);
-
-const encryptCaptcha = (secret, challenge) => {
-  const key = createHmac("sha256", secret).update("picture-captcha-encryption").digest();
-  const nonce = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", key, nonce);
-  const ciphertext = Buffer.concat([
-    cipher.update(JSON.stringify(challenge), "utf8"),
-    cipher.final(),
-  ]);
-  return Buffer.concat([nonce, cipher.getAuthTag(), ciphertext]).toString("base64url");
-};
-
-const issueCaptcha = (secret) => {
-  const target = CAPTCHA_IMAGES[randomInt(0, CAPTCHA_IMAGES.length)];
-  const targetCount = randomInt(2, 5);
-  const tiles = Array(targetCount).fill(target);
-  const distractors = CAPTCHA_IMAGES.filter((image) => image !== target);
-  while (tiles.length < 9) {
-    tiles.push(distractors[randomInt(0, distractors.length)]);
-  }
-  for (let index = tiles.length - 1; index > 0; index -= 1) {
-    const otherIndex = randomInt(0, index + 1);
-    [tiles[index], tiles[otherIndex]] = [tiles[otherIndex], tiles[index]];
-  }
-  const answer = tiles
-    .map((image, index) => image === target ? index : null)
-    .filter((index) => index !== null)
-    .join(",");
-  const token = encryptCaptcha(secret, {
-    answer,
-    expiresAt: Date.now() + CAPTCHA_LIFETIME_MS,
-  });
-  return { target, tiles, token };
-};
-
-const isCaptchaValid = (secret, token, answer) => {
-  if (typeof token !== "string" || typeof answer !== "string" || token.length > 1_000
-    || !/^[A-Za-z0-9_-]+$/.test(token)) return false;
-
-  try {
-    const encrypted = Buffer.from(token, "base64url");
-    if (encrypted.length < 29) return false;
-    const key = createHmac("sha256", secret).update("picture-captcha-encryption").digest();
-    const decipher = createDecipheriv("aes-256-gcm", key, encrypted.subarray(0, 12));
-    decipher.setAuthTag(encrypted.subarray(12, 28));
-    const plaintext = Buffer.concat([
-      decipher.update(encrypted.subarray(28)),
-      decipher.final(),
-    ]);
-    const challenge = JSON.parse(plaintext.toString("utf8"));
-    return typeof challenge.answer === "string"
-      && Number.isSafeInteger(challenge.expiresAt)
-      && challenge.expiresAt > Date.now()
-      && challenge.expiresAt <= Date.now() + CAPTCHA_LIFETIME_MS + 5_000
-      && answer === challenge.answer;
-  } catch {
-    return false;
-  }
-};
 
 const readRequiredSettings = () => {
   const settings = {
@@ -143,16 +80,8 @@ const sendWhatsAppConfirmation = async ({ accessToken, phoneNumberId, templateNa
 };
 
 export const handler = async (event) => {
-  const captchaSecret = process.env.CAPTCHA_SECRET;
-  if (event.httpMethod === "GET" && event.queryStringParameters?.challenge === "1") {
-    if (!captchaSecret || captchaSecret.length < 32) {
-      return jsonResponse(503, { error: "Verification is not configured yet. Please email maestra7586@gmail.com." });
-    }
-    return jsonResponse(200, issueCaptcha(captchaSecret));
-  }
-
   if (event.httpMethod !== "POST") {
-    return jsonResponse(405, { error: "Use GET for a verification question or POST to submit a project enquiry." });
+    return jsonResponse(405, { error: "Use POST to submit a project enquiry." });
   }
 
   if (!event.body || event.body.length > MAX_BODY_LENGTH) {
@@ -169,13 +98,6 @@ export const handler = async (event) => {
   if (!enquiry || typeof enquiry !== "object" || Array.isArray(enquiry)) {
     return jsonResponse(400, { error: "The enquiry details are invalid." });
   }
-  if (!captchaSecret || captchaSecret.length < 32) {
-    return jsonResponse(503, { error: "Verification is not configured yet. Please email maestra7586@gmail.com." });
-  }
-  if (!isCaptchaValid(captchaSecret, enquiry.captcha?.token, enquiry.captcha?.answer)) {
-    return jsonResponse(403, { error: "That verification answer was incorrect or expired. Please answer a new question." });
-  }
-
   const name = typeof enquiry.name === "string" ? enquiry.name.trim() : "";
   const email = typeof enquiry.email === "string" ? enquiry.email.trim() : "";
   const whatsapp = typeof enquiry.whatsapp === "string" ? enquiry.whatsapp.trim() : "";
